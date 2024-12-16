@@ -3,30 +3,28 @@ import openai
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
+# Создаем приложение FastAPI
 app = FastAPI()
 
-# Чтение ключа API из переменных окружения
+# Загружаем API-ключ из переменной окружения
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-class ChatRequest(BaseModel):
+# Модель данных для входящих сообщений
+class Message(BaseModel):
     message: str
 
-@app.get("/")
-def root():
-    return {"message": "Привет, Render!"}
-
 @app.post("/chat")
-async def chat(request: ChatRequest):
+async def chat(message: Message):
     try:
-        # Новый метод OpenAI API
+        # Запрос к OpenAI API
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "Ты дружелюбный помощник."},
-                {"role": "user", "content": request.message}
+                {"role": "user", "content": message.message}
             ]
         )
-        # Получение ответа
+        # Возвращаем ответ
         return {"response": response.choices[0].message.content}
-    except openai.OpenAIError as e:
+    except Exception as e:
+        # Обрабатываем ошибки и возвращаем их
         raise HTTPException(status_code=500, detail=f"Ошибка OpenAI: {str(e)}")
